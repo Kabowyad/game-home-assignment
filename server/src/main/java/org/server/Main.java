@@ -8,6 +8,6 @@ public class Main {
 
     public static void main(String[] args) {
 
-        SpringApplication.run(org.client.Main.class, args);
+        SpringApplication.run(org.server.Main.class, args);
     }
 }

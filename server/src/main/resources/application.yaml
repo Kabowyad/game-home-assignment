@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    hikari:
+      pool-name: mysql-db-pool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      leak-detection-threshold: 30000
+    url: jdbc:mysql://localhost:3306/rock_paper_scissors?useSSL=false&serverTimezone=UTC
+    username: root
+    password: root
+  jpa:
+    show-sql: false
+    generate-ddl: false
+    properties:
+      hibernate:
+        ddl-auto: none
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
