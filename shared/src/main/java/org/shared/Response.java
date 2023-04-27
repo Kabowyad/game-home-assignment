@@ -1,4 +1,4 @@
-package org.example;
+package org.shared;
 
 public class Response {
     public String text;

@@ -4,8 +4,8 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
-import org.example.Request;
-import org.example.Response;
+import org.shared.Request;
+import org.shared.Response;
 
 import java.io.IOException;
 

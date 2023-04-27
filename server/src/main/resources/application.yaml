@@ -7,7 +7,7 @@ spring:
       leak-detection-threshold: 30000
     url: jdbc:mysql://localhost:3306/rock_paper_scissors?useSSL=false&serverTimezone=UTC
     username: root
-    password: root
+    password: admin
   jpa:
     show-sql: false
     generate-ddl: false
