@@ -10,6 +10,17 @@ repositories {
 }
 
 dependencies {
+    // Lombok Dependency
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
+
+    // SLF4J API Dependency
+    implementation 'org.slf4j:slf4j-api:1.7.32'
+
+    // SLF4J Implementation
+    // Choose an SLF4J implementation, such as Logback, Log4j2, or java.util.logging
+    implementation 'ch.qos.logback:logback-classic:1.2.3'
+
     implementation project(path: ':shared')
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
@@ -19,3 +30,5 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+sourceCompatibility = JavaVersion.VERSION_16
+targetCompatibility = JavaVersion.VERSION_16

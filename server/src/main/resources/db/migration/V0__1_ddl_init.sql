@@ -12,9 +12,12 @@ ALTER TABLE players ADD CONSTRAINT uc_players_login UNIQUE (login);
 CREATE TABLE games (
   id BIGINT AUTO_INCREMENT NOT NULL,
    player_id BIGINT NOT NULL,
-   player_choice VARCHAR(255) NOT NULL,
-   computer_choice VARCHAR(255) NOT NULL,
-   outcome VARCHAR(255) NOT NULL,
+   player_choice VARCHAR(255) NULL,
+   computer_choice VARCHAR(255) NULL,
+   in_progress BIT(1) NOT NULL,
+   game_result VARCHAR(255) NULL,
+   current_step VARCHAR(255) NOT NULL,
+   time_remaining INT NOT NULL,
    CONSTRAINT pk_games PRIMARY KEY (id)
 );
 

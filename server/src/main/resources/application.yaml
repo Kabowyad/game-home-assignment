@@ -5,7 +5,7 @@ spring:
       maximum-pool-size: 10
       minimum-idle: 2
       leak-detection-threshold: 30000
-    url: jdbc:mysql://localhost:3306/rock_paper_scissors?useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/rock_paper_scissors?allowPublicKeyRetrieval=true&useSSL=false
     username: root
     password: admin
   jpa:

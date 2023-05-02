@@ -1,15 +1,19 @@
 package org.server.entity;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
+
 
 @Entity
 @Table(name = "players")
@@ -26,12 +30,52 @@ public class Player {
     private String password;
 
     @Column(name = "last_auth_date")
-    private LocalDate lastAuthDate;
+    private Instant lastAuthDate;
 
     @Column(name = "registration_date", nullable = false)
-    private LocalDate registrationDate;
+    @CreationTimestamp
+    private Instant registrationDate;
 
-    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Game> games;
 
+    public Player() {
+
+    }
+
+    public Player(String login, String password) {
+
+        this.login = login;
+        this.password = password;
+    }
+
+    public Long getId() {
+
+        return id;
+    }
+
+    public String getLogin() {
+
+        return login;
+    }
+
+    public String getPassword() {
+
+        return password;
+    }
+
+    public Instant getLastAuthDate() {
+
+        return lastAuthDate;
+    }
+
+    public Instant getRegistrationDate() {
+
+        return registrationDate;
+    }
+
+    public List<Game> getGames() {
+
+        return games;
+    }
 }
