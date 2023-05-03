@@ -26,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
@@ -47,7 +49,9 @@ public class CustomListener extends Listener {
     // Key: connectionID, Value: playerID
     private final HashMap<Integer, Long> playersConnections = new HashMap<>();
 
-    Move[] moves = { Move.ROCK, Move.PAPER, Move.PAPER };
+    private final int maxMoveCounts = 3;
+
+    Move[] moves = { Move.ROCK, Move.PAPER, Move.SCISSORS };
 
     public CustomListener(SignupService signupService, SigninService signinService,
             PlayerRepository playerRepository, GameRepository gameRepository,
@@ -77,9 +81,8 @@ public class CustomListener extends Listener {
 
           If the SigninRequest is invalid or an exception occurs during processing, a FailedSignInResponse is sent to the client.
          */
-        if (object instanceof SigninRequest) {
+        if (object instanceof SigninRequest request) {
 
-            SigninRequest request = (SigninRequest) object;
             log.info("SigninRequest from client: " + request);
 
             try {
@@ -87,10 +90,11 @@ public class CustomListener extends Listener {
                 playersConnections.put(connection.getID(), player.getId());
                 Game currentGame = findCurrentGame(player.getGames());
                 if (currentGame != null) {
+                    // we are updating the timerStarted to represent the correct starting point of the timer based on the time remaining
+                    currentGame.setTimerStarted(Instant.now()
+                            .minus(30 - currentGame.getTimeLeft(), ChronoUnit.SECONDS));
                     gameSessionService.addGameToSessions(connection.getID(), currentGame);
-                    SwitchToGameResponse response =
-                            new SwitchToGameResponse(currentGame.getCurrentStep().name(),
-                                    currentGame.getTimeLeft());
+                    SwitchToGameResponse response = new SwitchToGameResponse();
                     sendResponse(response, connection);
                 } else {
                     SwitchToMenuResponse response = new SwitchToMenuResponse();
@@ -100,7 +104,6 @@ public class CustomListener extends Listener {
                 FailedSignInResponse response = new FailedSignInResponse();
                 sendResponse(response, connection);
             }
-
         }
 
         /*
@@ -110,9 +113,8 @@ public class CustomListener extends Listener {
           to create a new user account with the provided login and password.
           Once the user account has been created, the connection to the client is closed.
          */
-        if (object instanceof SignupRequest) {
+        if (object instanceof SignupRequest request) {
 
-            SignupRequest request = (SignupRequest) object;
             log.info("Received SignupRequest from client-id {}", connection.getID());
 
             signupService.processSignupRequest(request);
@@ -131,14 +133,13 @@ public class CustomListener extends Listener {
 
             Player player =
                     playerRepository.findById(playersConnections.get(connection.getID())).get();
-            Game game = new Game(player, connection.getID());
+            Game game = new Game(player, connection.getID(), maxMoveCounts);
             gameSessionService.addGameToSessions(connection.getID(),
                     gameRepository.saveAndFlush(game));
         }
 
-        if (object instanceof MoveRequest) {
+        if (object instanceof MoveRequest request) {
 
-            MoveRequest request = (MoveRequest) object;
             Game game = gameSessionService.getGameByConnectionID(connection.getID());
 
             Move computerMove = moves[new Random().nextInt(moves.length)];
@@ -146,24 +147,17 @@ public class CustomListener extends Listener {
             game.updateStepGame();
             gameRepository.saveAndFlush(game);
 
-            String result;
-            switch (point) {
-                case 0:
-                    result = "Ничья";
-                    break;
-                case -1:
-                    result = "Очко в пользу компьютера";
-                    break;
-                default:
-                    result = "Очко в пользу человека";
-            }
+            String result = switch (point) {
+                case 0 -> "Ничья";
+                case -1 -> "Очко в пользу компьютера";
+                default -> "Очко в пользу человека";
+            };
 
             MoveResponse response = new MoveResponse();
             response.setMessage(
                     String.format("Человек сходил %s, Компьютер сходил %s, %s", request.move,
                             computerMove, result));
-            response.setStep(game.getCurrentStep());
-            if (game.getCurrentStep().equals(GameStep.END)) {
+            if (game.getMovesPassed() == maxMoveCounts) {
                 response.setGameResult(game.getGameResult().name());
                 gameSessionService.deleteFinishedGameFromSessions(connection.getID());
             }
@@ -174,7 +168,7 @@ public class CustomListener extends Listener {
 
     @Override
     public void disconnected(Connection connection) {
-        // Сохраняем весь стейт по игре в БД
+
         val gameInProgress = gameSessionService.getGameByConnectionID(connection.getID());
         if (gameInProgress == null || !gameInProgress.isInProgress())
             return;
@@ -202,6 +196,7 @@ public class CustomListener extends Listener {
 
         for (Game game : games) {
             if (game.isInProgress()) {
+                game.setMaxMoveCounts(maxMoveCounts);
                 return game;
             }
         }

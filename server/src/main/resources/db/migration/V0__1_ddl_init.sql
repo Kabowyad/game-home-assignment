@@ -14,8 +14,8 @@ CREATE TABLE games (
    player_id BIGINT NOT NULL,
    in_progress BIT(1) NOT NULL,
    game_result VARCHAR(255) NULL,
-   current_step VARCHAR(255) NOT NULL,
    timer_started datetime NULL,
+   moves_passed INT NULL,
    player_points INT NULL,
    time_left INT NULL,
    CONSTRAINT pk_games PRIMARY KEY (id)

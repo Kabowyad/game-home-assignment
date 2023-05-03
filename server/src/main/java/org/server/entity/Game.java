@@ -39,12 +39,11 @@ public class Game {
     @Column(name = "game_result")
     private GameResult gameResult;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "current_step", nullable = false)
-    private GameStep currentStep;
-
     @Column(name = "timer_started")
     private Instant timerStarted;
+
+    @Column(name = "moves_passed")
+    private Integer movesPassed = 0;
 
     // Если больше 0 - то победа
     // Если меньше 0 - то проиграл
@@ -53,44 +52,37 @@ public class Game {
     private Integer playerPoints = 0;
 
     @Column(name = "time_left")
-    private Integer timeLeft;
+    private Integer timeLeft = 30;
 
     @Transient
     private Integer connectionId;
+
+    @Transient
+    private Integer maxMoveCounts;
 
     public Game() {
 
     }
 
-    public Game(Player player, Integer connectionId) {
+    public Game(Player player, Integer connectionId, Integer maxMoveCounts) {
 
         this.player = player;
         this.connectionId = connectionId;
         this.inProgress = true;
-        this.currentStep = GameStep.GAME_STEP_1;
         this.timerStarted = Instant.now();
+        this.maxMoveCounts = maxMoveCounts;
     }
 
     public void updateStepGame() {
+        if (this.movesPassed.equals(this.maxMoveCounts)) {
+            inProgress = false;
+            if (playerPoints == 0) gameResult = GameResult.DRAW;
+            if (playerPoints > 0) gameResult = GameResult.WIN;
+            if (playerPoints < 0) gameResult = GameResult.LOSE;
+        }
         this.timeLeft = 30;
         this.timerStarted = Instant.now();
-        switch (this.currentStep) {
-            case GAME_STEP_1:
-                currentStep = GameStep.GAME_STEP_2;
-                break;
-            case GAME_STEP_2:
-                currentStep = GameStep.GAME_STEP_3;
-                break;
-            case GAME_STEP_3:
-                currentStep = GameStep.END;
-                inProgress = false;
-                if (playerPoints == 0) gameResult = GameResult.DRAW;
-                if (playerPoints > 0) gameResult = GameResult.WIN;
-                if (playerPoints < 0) gameResult = GameResult.LOSE;
-                break;
-            case END:
-                break;
-        }
+        this.movesPassed = this.movesPassed + 1;
     }
 
     public int makeMove(Move playerMove, Move computerMove) {
@@ -98,19 +90,11 @@ public class Game {
         if (computerMove == playerMove) {
             point = 0;
         } else {
-            switch (playerMove) {
-                case ROCK:
-                    point = (computerMove == Move.SCISSORS) ? 1 : -1;
-                    break;
-                case PAPER:
-                    point = (computerMove == Move.ROCK) ? 1 : -1;
-                    break;
-                case SCISSORS:
-                    point = (computerMove == Move.PAPER) ? 1 : -1;
-                    break;
-                default:
-                    throw new IllegalArgumentException("Invalid move");
-            }
+            point = switch (playerMove) {
+                case ROCK -> (computerMove == Move.SCISSORS) ? 1 : -1;
+                case PAPER -> (computerMove == Move.ROCK) ? 1 : -1;
+                case SCISSORS -> (computerMove == Move.PAPER) ? 1 : -1;
+            };
         }
         this.setPlayerPoints(this.getPlayerPoints() + point);
         return point;

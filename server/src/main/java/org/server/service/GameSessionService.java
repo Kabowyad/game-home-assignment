@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -44,16 +45,20 @@ public class GameSessionService {
         return new ArrayList<>(gameSessions.values());
     }
 
+    public Set<Map.Entry<Integer, Game>> getAllEntries() {
+        return gameSessions.entrySet();
+    }
+
     public List<Game> getGamesWithTimerOut() {
 
         List<Game> games = new ArrayList<>();
         for (Map.Entry<Integer, Game> entry : gameSessions.entrySet()) {
             if (entry.getValue().getTimerStarted() != null &&
                     entry.getValue().getTimeLeft() <= 0 &&
-                    entry.getValue().getCurrentStep() != GameStep.END) {
+                    entry.getValue().isInProgress()) {
                 val duration = Duration.between(entry.getValue().getTimerStarted(), Instant.now());
                 if (duration.getSeconds() >= 30) {
-                    log.info("Джоба нашла игру с протухшим таймеров: {}",
+                    log.info("Found game with no time to move: {}",
                             entry.getValue().getId());
                     games.add(entry.getValue());
                 }

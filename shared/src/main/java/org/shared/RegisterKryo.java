@@ -7,6 +7,7 @@ import org.shared.request.InitializeGameRequest;
 import org.shared.request.MoveRequest;
 import org.shared.request.SigninRequest;
 import org.shared.request.SignupRequest;
+import org.shared.request.TimeLeftResponse;
 import org.shared.response.FailedSignInResponse;
 import org.shared.response.GameEndedResponse;
 import org.shared.response.MoveResponse;
@@ -27,6 +28,7 @@ public class RegisterKryo {
         kryo.register(GameEndedResponse.class);
         kryo.register(Move.class);
         kryo.register(GameStep.class);
+        kryo.register(TimeLeftResponse.class);
     }
 
 }

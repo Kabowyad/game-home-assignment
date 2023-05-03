@@ -5,46 +5,39 @@ import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import lombok.extern.slf4j.Slf4j;
-import org.shared.response.FailedSignInResponse;
-import org.shared.request.InitializeGameRequest;
-import org.shared.enums.Move;
-import org.shared.request.MoveRequest;
-import org.shared.response.MoveResponse;
 import org.shared.RegisterKryo;
+import org.shared.enums.Move;
+import org.shared.request.InitializeGameRequest;
+import org.shared.request.MoveRequest;
 import org.shared.request.SigninRequest;
 import org.shared.request.SignupRequest;
+import org.shared.request.TimeLeftResponse;
+import org.shared.response.FailedSignInResponse;
+import org.shared.response.MoveResponse;
 import org.shared.response.SwitchToGameResponse;
 import org.shared.response.SwitchToMenuResponse;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import static org.client.Main.State.END;
-import static org.client.Main.State.GAME_STEP_1;
-import static org.client.Main.State.GAME_STEP_2;
-import static org.client.Main.State.GAME_STEP_3;
 import static org.client.Main.State.MENU;
+import static org.client.Main.State.MOVE;
 import static org.client.Main.State.SIGNUP_SIGNIN;
 
 @Slf4j
 public class Main {
 
     private static State currentState = SIGNUP_SIGNIN;
-
-    private static int timeLeft;
-    private static Timer timer;
-    private static Timer endTimer;
+    private static Timer moveTimer;
 
     enum State {
         SIGNUP_SIGNIN,
         MENU,
-        GAME_STEP_1,
-        GAME_STEP_2,
-        GAME_STEP_3,
+        MOVE,
         END
     }
 
@@ -88,18 +81,16 @@ public class Main {
                 if (input.equalsIgnoreCase("logout")) {
                     client.close();
                 } else if (input.equalsIgnoreCase("start")) {
-                    // Инициализируем первую игру
                     InitializeGameRequest request = new InitializeGameRequest();
                     sendRequest(request, client);
-                    currentState = GAME_STEP_1;
-                    startTimer(30);
+                    currentState = MOVE;
                 } else {
                     log.info("Unknown command.");
                     System.out.print("> ");
                 }
             }
 
-            case GAME_STEP_1, GAME_STEP_2, GAME_STEP_3 -> {
+            case MOVE -> {
                 if (input.equalsIgnoreCase("rock") ||
                         input.equalsIgnoreCase("paper") ||
                         input.equalsIgnoreCase("scissors")) {
@@ -110,11 +101,11 @@ public class Main {
                         case "scissors" -> request.setMove(Move.SCISSORS);
                     }
                     sendRequest(request, client);
-                    startTimer(30);
                 } else if (input.equalsIgnoreCase("logout")) {
                     client.close();
                 } else {
                     log.info("Unknown command.");
+                    System.out.print("> ");
                 }
             }
 
@@ -172,35 +163,27 @@ public class Main {
         client.addListener(new Listener() {
             public void received (Connection connection, Object object) {
 
-                if (object instanceof SwitchToMenuResponse response) {
+                if (object instanceof SwitchToMenuResponse) {
                     currentState = MENU;
                 }
 
-                if (object instanceof SwitchToGameResponse response) {
-                    switch (response.getGameStep()) {
-                        case "GAME_STEP_1" -> currentState = GAME_STEP_1;
-                        case "GAME_STEP_2" -> currentState = GAME_STEP_2;
-                        case "GAME_STEP_3" -> currentState = GAME_STEP_3;
-                    }
-                    // Обновляем таймер
-                    startTimer(response.getTimeLeft());
+                if (object instanceof SwitchToGameResponse) {
+                    currentState = MOVE;
+                    log.info("Игра продолжается. Делайте ход");
+                    System.out.print("> ");
                 }
 
                 if (object instanceof MoveResponse response) {
-                    log.info(response.getMessage());
-                    switch (response.getStep()) {
-                        // Обновляем шаг игры
-                        case GAME_STEP_1 -> currentState = GAME_STEP_1;
-                        case GAME_STEP_2 -> currentState = GAME_STEP_2;
-                        case GAME_STEP_3 -> currentState = GAME_STEP_3;
-                        case END -> {
-                            currentState = END;
-                            timer.cancel();
-                            log.info("Игра закончилась, ваш результат {}", response.getGameResult());
-                            log.info("Через 5 секунд вы попадете на этап Menu");
-                            returnToMenu();
-                            System.out.print("> ");
-                        }
+
+                    if (response.getGameResult() != null) {
+                        currentState = END;
+                        log.info("Игра закончилась, ваш результат {}", response.getGameResult());
+                        log.info("Через 5 секунд вы попадете на этап Menu");
+                        returnToMenu();
+                        System.out.print("> ");
+                    } else {
+                        log.info(response.getMessage());
+                        System.out.print("> ");
                     }
                 }
 
@@ -208,32 +191,14 @@ public class Main {
                     log.info("Invalid credentials");
                     System.out.print("> ");
                 }
+
+                if (object instanceof TimeLeftResponse response) {
+                    log.info(response.getMessage());
+                }
             }
         });
 
         return client;
-    }
-
-    private static void startTimer(int initialTimeLeft) {
-        if (timer != null) {
-            timer.cancel();
-        }
-        timeLeft = initialTimeLeft;
-        timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                if (Arrays.asList(30, 15, 5, 3, 1).contains(timeLeft)) {
-                    log.info("Time remaining: " + timeLeft + " seconds");
-                    System.out.print("> ");
-                }
-                if (timeLeft <= 0) {
-                    log.info("Time's up! You lose this round.");
-                    this.cancel();
-                }
-                timeLeft--;
-            }
-        }, 1000, 1000);
     }
 
     private static void returnToMenu() {

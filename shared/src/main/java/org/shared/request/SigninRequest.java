@@ -1,8 +1,8 @@
 package org.shared.request;
 
 public class SigninRequest {
-    public String login;
-    public String password;
+    private String login;
+    private String password;
 
     public SigninRequest() {
 
@@ -22,11 +22,5 @@ public class SigninRequest {
 
         this.login = login;
         this.password = password;
-    }
-
-    @Override
-    public String toString() {
-
-        return "SiginRequest{" + "login='" + login + '\'' + ", password='" + password + '\'' + '}';
     }
 }
