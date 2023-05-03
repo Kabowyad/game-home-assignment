@@ -1,4 +1,4 @@
-package org.shared;
+package org.shared.request;
 
 public class SignupRequest {
     public String login;

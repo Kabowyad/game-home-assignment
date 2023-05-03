@@ -5,21 +5,25 @@ import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import lombok.extern.slf4j.Slf4j;
-import org.shared.FailedSignIn;
-import org.shared.InitializeGameRequest;
-import org.shared.Move;
-import org.shared.MoveRequest;
+import org.shared.response.FailedSignInResponse;
+import org.shared.request.InitializeGameRequest;
+import org.shared.enums.Move;
+import org.shared.request.MoveRequest;
+import org.shared.response.MoveResponse;
 import org.shared.RegisterKryo;
-import org.shared.SigninRequest;
-import org.shared.SignupRequest;
-import org.shared.SignupResponse;
-import org.shared.SwitchToGameResponse;
-import org.shared.SwitchToMenuResponse;
+import org.shared.request.SigninRequest;
+import org.shared.request.SignupRequest;
+import org.shared.response.SwitchToGameResponse;
+import org.shared.response.SwitchToMenuResponse;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.Timer;
+import java.util.TimerTask;
 
+import static org.client.Main.State.END;
 import static org.client.Main.State.GAME_STEP_1;
 import static org.client.Main.State.GAME_STEP_2;
 import static org.client.Main.State.GAME_STEP_3;
@@ -29,16 +33,19 @@ import static org.client.Main.State.SIGNUP_SIGNIN;
 @Slf4j
 public class Main {
 
-    private static Long playerId = null;
-
     private static State currentState = SIGNUP_SIGNIN;
+
+    private static int timeLeft;
+    private static Timer timer;
+    private static Timer endTimer;
 
     enum State {
         SIGNUP_SIGNIN,
         MENU,
         GAME_STEP_1,
         GAME_STEP_2,
-        GAME_STEP_3
+        GAME_STEP_3,
+        END
     }
 
     public static void main(String[] args) throws IOException {
@@ -63,76 +70,97 @@ public class Main {
     private static void processCommand(Client client, String input) throws IOException {
 
         switch (currentState) {
+
             case SIGNUP_SIGNIN -> {
-                if (input.startsWith("signup=") || input.startsWith("signin=")) {
-                    processSignupOrSignin(client, input);
+
+                if (input.startsWith("signup=")) {
+                    processSignUp(client, input);
+                } else if (input.startsWith("signin=")) {
+                    processSignIn(client, input);
                 } else {
-                    System.out.println("Unknown command.");
+                    log.info("Unknown command.");
+                    System.out.print("> ");
                 }
             }
 
             case MENU -> {
+
                 if (input.equalsIgnoreCase("logout")) {
                     client.close();
                 } else if (input.equalsIgnoreCase("start")) {
                     // Инициализируем первую игру
                     InitializeGameRequest request = new InitializeGameRequest();
-                    request.playerId = playerId;
                     sendRequest(request, client);
-                    System.out.println("You are now in GAME STEP 1. Choose you pick.");
                     currentState = GAME_STEP_1;
+                    startTimer(30);
                 } else {
-                    System.out.println("Unknown command.");
+                    log.info("Unknown command.");
+                    System.out.print("> ");
                 }
             }
 
             case GAME_STEP_1, GAME_STEP_2, GAME_STEP_3 -> {
-                if (input.equalsIgnoreCase("rock") || input.equalsIgnoreCase(
-                        "paper") || input.equalsIgnoreCase("scissors")) {
+                if (input.equalsIgnoreCase("rock") ||
+                        input.equalsIgnoreCase("paper") ||
+                        input.equalsIgnoreCase("scissors")) {
                     MoveRequest request = new MoveRequest();
-                    request.playerId = playerId;
                     switch (input) {
-                        case "rock" -> request.move = Move.ROCK;
-                        case "paper" -> request.move = Move.PAPER;
-                        case "scissors" -> request.move = Move.SCISSORS;
+                        case "rock" -> request.setMove(Move.ROCK);
+                        case "paper" -> request.setMove(Move.PAPER);
+                        case "scissors" -> request.setMove(Move.SCISSORS);
                     }
                     sendRequest(request, client);
-                } if (input.equalsIgnoreCase("logout")) {
-                    // TODO отключиться от сервера
+                    startTimer(30);
+                } else if (input.equalsIgnoreCase("logout")) {
+                    client.close();
                 } else {
-                    System.out.println("Unknown command.");
+                    log.info("Unknown command.");
                 }
             }
-            default -> System.out.println("Unknown state.");
+
+            case END -> {
+                if (input.equalsIgnoreCase("logout")) {
+                    client.close();
+                }
+            }
+
+            default -> log.info("Unknown state.");
         }
     }
 
-    // TODO разнести на две разные функции
-    private static void processSignupOrSignin(Client client, String input) {
+    private static void processSignIn(Client client, String input) {
         String[] parts = input.split("=");
         if (parts.length == 3) {
             String command = parts[0];
             String login = parts[1];
             String password = parts[2];
-            System.out.println(command + "-" + login + "-" + password);
-            if (command.equals("signup")) {
-                SignupRequest request = new SignupRequest(login, password);
-                sendRequest(request, client);
-            }
 
             if (command.equals("signin")) {
                 SigninRequest request = new SigninRequest(login, password);
                 sendRequest(request, client);
             }
-
         } else {
-            System.out.println("Invalid command format.");
+            log.info("Invalid command format.");
+            System.out.print("> ");
         }
+
     }
 
-    private static void sendRequest(Object request, Client client) {
-        log.info("Sending: {}, clientId: {}", request.getClass(), client.getID());
-        client.sendTCP(request);
+    private static void processSignUp(Client client, String input) {
+        String[] parts = input.split("=");
+        if (parts.length == 3) {
+            String command = parts[0];
+            String login = parts[1];
+            String password = parts[2];
+
+            if (command.equals("signup")) {
+                SignupRequest request = new SignupRequest(login, password);
+                sendRequest(request, client);
+            }
+        } else {
+            log.info("Invalid command format.");
+            System.out.print("> ");
+        }
     }
 
     private static Client createClient() {
@@ -140,32 +168,89 @@ public class Main {
         Client client = new Client();
         Kryo kryo = client.getKryo();
         RegisterKryo.registerClasses(kryo);
+
         client.addListener(new Listener() {
             public void received (Connection connection, Object object) {
+
                 if (object instanceof SwitchToMenuResponse response) {
-                    playerId = response.clientId;
                     currentState = MENU;
                 }
 
                 if (object instanceof SwitchToGameResponse response) {
-                    playerId = response.clientId;
-                    switch (response.gameStep) {
+                    switch (response.getGameStep()) {
                         case "GAME_STEP_1" -> currentState = GAME_STEP_1;
                         case "GAME_STEP_2" -> currentState = GAME_STEP_2;
                         case "GAME_STEP_3" -> currentState = GAME_STEP_3;
                     }
+                    // Обновляем таймер
+                    startTimer(response.getTimeLeft());
                 }
 
-                if (object instanceof FailedSignIn) {
-                    System.out.println("Invalid credentials");
+                if (object instanceof MoveResponse response) {
+                    log.info(response.getMessage());
+                    switch (response.getStep()) {
+                        // Обновляем шаг игры
+                        case GAME_STEP_1 -> currentState = GAME_STEP_1;
+                        case GAME_STEP_2 -> currentState = GAME_STEP_2;
+                        case GAME_STEP_3 -> currentState = GAME_STEP_3;
+                        case END -> {
+                            currentState = END;
+                            timer.cancel();
+                            log.info("Игра закончилась, ваш результат {}", response.getGameResult());
+                            log.info("Через 5 секунд вы попадете на этап Menu");
+                            returnToMenu();
+                            System.out.print("> ");
+                        }
+                    }
                 }
 
-                if (object instanceof SignupResponse) {
-                    System.out.println("SignupResponse from server");
+                if (object instanceof FailedSignInResponse) {
+                    log.info("Invalid credentials");
+                    System.out.print("> ");
                 }
             }
         });
 
         return client;
     }
+
+    private static void startTimer(int initialTimeLeft) {
+        if (timer != null) {
+            timer.cancel();
+        }
+        timeLeft = initialTimeLeft;
+        timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                if (Arrays.asList(30, 15, 5, 3, 1).contains(timeLeft)) {
+                    log.info("Time remaining: " + timeLeft + " seconds");
+                    System.out.print("> ");
+                }
+                if (timeLeft <= 0) {
+                    log.info("Time's up! You lose this round.");
+                    this.cancel();
+                }
+                timeLeft--;
+            }
+        }, 1000, 1000);
+    }
+
+    private static void returnToMenu() {
+        Timer endTimer = new Timer();
+        endTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                currentState = MENU;
+                log.info("Вы вернулись на этап Menu.");
+                System.out.print("> ");
+            }
+        }, 5000);
+    }
+
+    private static void sendRequest(Object request, Client client) {
+        log.info("Sending: {}, clientId: {}", request.getClass(), client.getID());
+        client.sendTCP(request);
+    }
+
 }

@@ -3,7 +3,7 @@ package org.server.service;
 import lombok.extern.slf4j.Slf4j;
 import org.server.entity.Player;
 import org.server.repository.PlayerRepository;
-import org.shared.SignupRequest;
+import org.shared.request.SignupRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

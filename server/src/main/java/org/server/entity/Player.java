@@ -1,5 +1,7 @@
 package org.server.entity;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.CascadeType;
@@ -15,6 +17,8 @@ import java.time.Instant;
 import java.util.List;
 
 
+@Setter
+@Getter
 @Entity
 @Table(name = "players")
 public class Player {
@@ -49,33 +53,4 @@ public class Player {
         this.password = password;
     }
 
-    public Long getId() {
-
-        return id;
-    }
-
-    public String getLogin() {
-
-        return login;
-    }
-
-    public String getPassword() {
-
-        return password;
-    }
-
-    public Instant getLastAuthDate() {
-
-        return lastAuthDate;
-    }
-
-    public Instant getRegistrationDate() {
-
-        return registrationDate;
-    }
-
-    public List<Game> getGames() {
-
-        return games;
-    }
 }

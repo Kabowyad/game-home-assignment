@@ -1,4 +1,4 @@
-package org.shared;
+package org.shared.enums;
 
 public enum Move {
     ROCK,

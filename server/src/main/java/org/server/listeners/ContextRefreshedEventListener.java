@@ -1,6 +1,5 @@
-package org.server;
+package org.server.listeners;
 
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryonet.Server;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
@@ -10,7 +9,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
-public class EventListeners implements ApplicationListener<ContextRefreshedEvent> {
+public class ContextRefreshedEventListener implements ApplicationListener<ContextRefreshedEvent> {
 
     @Autowired
     private Server server;

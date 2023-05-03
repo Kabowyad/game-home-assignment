@@ -1,4 +1,4 @@
-package org.server;
+package org.server.config;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryonet.Listener;
