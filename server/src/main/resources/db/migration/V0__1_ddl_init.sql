@@ -22,3 +22,6 @@ CREATE TABLE games (
 );
 
 ALTER TABLE games ADD CONSTRAINT FK_GAMES_ON_PLAYER FOREIGN KEY (player_id) REFERENCES players (id);
+
+INSERT INTO clients (login, password) VALUES ('client1', 'client1pass');
+INSERT INTO clients (login, password) VALUES ('client2', 'client2pass');
