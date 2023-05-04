@@ -79,10 +79,11 @@ public class Game {
             if (playerPoints == 0) gameResult = GameResult.DRAW;
             if (playerPoints > 0) gameResult = GameResult.WIN;
             if (playerPoints < 0) gameResult = GameResult.LOSE;
+        } else {
+            this.movesPassed = this.movesPassed + 1;
+            this.timeLeft = 30;
+            this.timerStarted = Instant.now();
         }
-        this.timeLeft = 30;
-        this.timerStarted = Instant.now();
-        this.movesPassed = this.movesPassed + 1;
     }
 
     public int makeMove(Move playerMove, Move computerMove) {

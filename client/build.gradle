@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
 group 'org.client'
@@ -8,6 +9,17 @@ version '1.0-SNAPSHOT'
 repositories {
     mavenCentral()
 }
+
+tasks.jar {
+    manifest.attributes["Main-Class"] = "org.client.Main" // Change this line
+}
+
+shadowJar {
+    archiveBaseName.set('client')
+    archiveVersion.set('1.0-SNAPSHOT')
+    archiveClassifier.set('')
+}
+
 
 dependencies {
     // Lombok Dependency

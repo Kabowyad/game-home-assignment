@@ -13,6 +13,8 @@ services:
       - SPRING_DATASOURCE_PASSWORD=admin
     ports:
       - "8080:8080"
+      - "54555:54555/tcp"
+      - "54777:54777/udp"
 
   db:
     image: mysql:8.0

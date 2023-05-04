@@ -18,7 +18,6 @@ public class SigninService {
         this.playerRepository = playerRepository;
     }
 
-    @Transactional
     public Player processSignin(SigninRequest request) throws RuntimeException {
         Optional<Player> playerOptional = playerRepository.findByLoginAndPassword(request.getLogin(), request.getPassword());
 
